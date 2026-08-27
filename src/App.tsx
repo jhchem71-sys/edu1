@@ -14,6 +14,7 @@ import {
   filterAndSortRecords,
   formatOrderCandidatesTSV
 } from './utils/evaluation';
+import { getSupabaseClient } from './lib/supabaseClient';
 
 import { Navbar } from './components/Navbar';
 import { DashboardStats } from './components/DashboardStats';
@@ -23,11 +24,51 @@ import { ReagentDetailModal } from './components/ReagentDetailModal';
 import { DuplicateGroupsModal } from './components/DuplicateGroupsModal';
 import { ImportModal } from './components/ImportModal';
 import { ReagentFormModal } from './components/ReagentFormModal';
+import { LoginScreen } from './components/LoginScreen';
+import { SupabaseSetupModal } from './components/SupabaseSetupModal';
 import { Toast, ToastMessage } from './components/Toast';
 
 const STORAGE_KEY = 'reagent_inventory_dataset_v1';
 
 export default function App() {
+  // Auth state
+  const [user, setUser] = useState<any | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isSupabaseSetupOpen, setIsSupabaseSetupOpen] = useState(false);
+
+  useEffect(() => {
+    const client = getSupabaseClient();
+    if (!client) {
+      setAuthChecking(false);
+      return;
+    }
+
+    client.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      setAuthChecking(false);
+    });
+
+    const {
+      data: { subscription },
+    } = client.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      setAuthChecking(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const client = getSupabaseClient();
+    if (client) {
+      await client.auth.signOut();
+    }
+    setUser(null);
+    showToast('info', '로그아웃 완료', '성공적으로 로그아웃되었습니다.');
+  };
+
   // Raw records in state & local storage
   const [rawRecords, setRawRecords] = useState<RawReagentRecord[]>(() => {
     try {
@@ -249,6 +290,42 @@ export default function App() {
     setIsDuplicateModalOpen(true);
   }, []);
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-slate-400">인증 상태 확인 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <LoginScreen
+          onLoginSuccess={() => {
+            const client = getSupabaseClient();
+            client?.auth.getSession().then(({ data }) => setUser(data.session?.user || null));
+          }}
+          onOpenSetup={() => setIsSupabaseSetupOpen(true)}
+        />
+        {isSupabaseSetupOpen && (
+          <SupabaseSetupModal
+            onClose={() => setIsSupabaseSetupOpen(false)}
+            onConfigSaved={() => {
+              setIsSupabaseSetupOpen(false);
+              const client = getSupabaseClient();
+              client?.auth.getSession().then(({ data }) => setUser(data.session?.user || null));
+            }}
+          />
+        )}
+        <Toast toast={toast} onClose={() => setToast(null)} />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 pb-16">
       {/* Top Navigation */}
@@ -256,6 +333,7 @@ export default function App() {
         baseDate={BASE_DATE}
         totalCount={rawRecords.length}
         orderCandidatesCount={orderCandidatesCount}
+        userEmail={user?.email}
         onOpenImport={() => setIsImportModalOpen(true)}
         onOpenAddModal={() => setIsAddModalOpen(true)}
         onCopyOrderList={handleCopyOrderList}
@@ -265,6 +343,8 @@ export default function App() {
           setSelectedCasForDup(undefined);
           setIsDuplicateModalOpen(true);
         }}
+        onOpenSupabaseSetup={() => setIsSupabaseSetupOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -344,6 +424,18 @@ export default function App() {
           nextId={nextReagentId}
           onClose={() => setIsAddModalOpen(false)}
           onAdd={handleAddRecord}
+        />
+      )}
+
+      {/* Supabase Setup Modal */}
+      {isSupabaseSetupOpen && (
+        <SupabaseSetupModal
+          onClose={() => setIsSupabaseSetupOpen(false)}
+          onConfigSaved={() => {
+            setIsSupabaseSetupOpen(false);
+            const client = getSupabaseClient();
+            client?.auth.getSession().then(({ data }) => setUser(data.session?.user || null));
+          }}
         />
       )}
 

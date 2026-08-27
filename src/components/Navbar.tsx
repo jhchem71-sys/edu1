@@ -8,31 +8,40 @@ import {
   RotateCcw,
   Sparkles,
   Calendar,
-  Layers
+  Layers,
+  LogOut,
+  Settings,
+  User
 } from 'lucide-react';
 
 interface NavbarProps {
   baseDate: string;
   totalCount: number;
   orderCandidatesCount: number;
+  userEmail?: string;
   onOpenImport: () => void;
   onOpenAddModal: () => void;
   onCopyOrderList: () => void;
   onExportCsv: () => void;
   onResetToDefault: () => void;
   onOpenDuplicateModal: () => void;
+  onOpenSupabaseSetup: () => void;
+  onLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   baseDate,
   totalCount,
   orderCandidatesCount,
+  userEmail,
   onOpenImport,
   onOpenAddModal,
   onCopyOrderList,
   onExportCsv,
   onResetToDefault,
-  onOpenDuplicateModal
+  onOpenDuplicateModal,
+  onOpenSupabaseSetup,
+  onLogout
 }) => {
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
@@ -57,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons & User Info */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Order Candidates Copy Button (F-08) */}
           <button
@@ -103,6 +112,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Download className="w-4 h-4" />
           </button>
 
+          {/* Supabase Settings */}
+          <button
+            id="btn-nav-supabase-settings"
+            onClick={onOpenSupabaseSetup}
+            className="p-1.5 text-emerald-400 hover:text-emerald-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md cursor-pointer transition-colors"
+            title="Supabase 설정"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
           {/* Reset sample */}
           <button
             id="btn-nav-reset"
@@ -116,8 +135,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+
+          {/* User Email & Logout */}
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-700 ml-1">
+            {userEmail && (
+              <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800 px-2.5 py-1 rounded-md border border-slate-700">
+                <User className="w-3.5 h-3.5 text-blue-400" />
+                <span className="font-mono">{userEmail}</span>
+              </div>
+            )}
+            <button
+              id="btn-logout"
+              onClick={onLogout}
+              className="px-2.5 py-1.5 text-xs font-bold text-rose-300 bg-rose-950/80 hover:bg-rose-900 border border-rose-800 rounded-md flex items-center gap-1 transition-colors cursor-pointer"
+              title="로그아웃"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <span>로그아웃</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>
   );
 };
+
