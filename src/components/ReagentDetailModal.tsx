@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { EvaluatedReagentRecord, RawReagentRecord, DuplicateGroupInfo } from '../types';
 import { HazardBadge, StorageTempBadge, ExpiryBadge } from './Badges';
+import { ResearcherMemoBox } from './ResearcherMemoBox';
 import { BASE_DATE } from '../utils/evaluation';
 import {
   X,
@@ -460,6 +461,9 @@ export const ReagentDetailModal: React.FC<ReagentDetailModalProps> = ({
                   <span className="text-slate-800">{record.remark}</span>
                 </div>
               )}
+
+              {/* Researcher Personal Memo Box (Supabase RLS protected) */}
+              <ResearcherMemoBox reagentId={record.reagent_id} />
 
               {/* Bottom deletion button */}
               <div className="pt-3 flex justify-between items-center border-t border-slate-100">
